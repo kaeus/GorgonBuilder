@@ -1,0 +1,24 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+  background: #14161a;
+  color: #e6e6e6;
+}
+body { margin: 0; }
+button, select, input { font: inherit; }
+a { color: #7cc4ff; }
+
+.app { max-width: 1200px; margin: 0 auto; padding: 16px; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; }
+.card { background: #1e2228; border: 1px solid #2a2f38; border-radius: 8px; padding: 12px; }
+.slot { width: 120px; height: 120px; background: #22262e; border: 1px solid #2a2f38; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; text-align: center; cursor: pointer; }
+.slot.filled { background: #2a3340; }
+.bar { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.modlist { display: grid; grid-template-columns: 1fr; gap: 4px; }
+.tooltip { position: absolute; background: #0f1115; border: 1px solid #3a414c; padding: 10px 12px;
+  border-radius: 6px; min-width: 420px; max-width: 560px; font-size: 13px; line-height: 1.4;
+  z-index: 50; pointer-events: none; }
+.tag { display: inline-block; padding: 1px 6px; background: #2c3340; border-radius: 4px; font-size: 11px; margin-right: 4px; }
+.error { color: #ff7a7a; }
+.muted { color: #8a93a3; }

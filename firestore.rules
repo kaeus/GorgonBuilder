@@ -1,0 +1,47 @@
+rules_version = '2';
+
+// GorgonBuilder Firestore security rules.
+//
+// Collections:
+//   - builds/{buildId}       — character builds. Owner read/write, public read when isPublic.
+//   - users/{uid}            — per-user profile (display username). Owner write, public read.
+//
+// IMPORTANT: This file is the source of truth for the deployed rules. When the
+// data model changes (new collection, new required field, new access pattern),
+// update this file AND re-paste it into the Firebase console (or deploy via
+// `firebase deploy --only firestore:rules`). See CLAUDE.md § "Firestore rules".
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------------
+    // builds
+    // ---------------------------------------------------------------------
+    match /builds/{buildId} {
+      // Anyone can read a build if it's marked public; owners can always read theirs.
+      allow read: if resource.data.isPublic == true
+                  || (request.auth != null && resource.data.ownerUid == request.auth.uid);
+
+      // Create: must be signed in and stamp yourself as the owner.
+      allow create: if request.auth != null
+                    && request.resource.data.ownerUid == request.auth.uid;
+
+      // Update/delete: must own the doc and may not reassign ownership.
+      allow update: if request.auth != null
+                    && resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.ownerUid == resource.data.ownerUid;
+      allow delete: if request.auth != null
+                    && resource.data.ownerUid == request.auth.uid;
+    }
+
+    // ---------------------------------------------------------------------
+    // users (profiles — display username used in build bylines)
+    // ---------------------------------------------------------------------
+    match /users/{uid} {
+      // Profile is public so build bylines can resolve without per-caller auth.
+      allow read: if true;
+      // Only the owner can write their own profile.
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

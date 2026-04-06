@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Gorgon Builder</title>
+    <script>
+      // SPA fallback for GitHub Pages: preserve path + query and redirect to index.
+      (function () {
+        var path = location.pathname + location.search + location.hash;
+        sessionStorage.setItem('spa-redirect', path);
+        var base = '/';
+        // If hosted under /repo/, keep that prefix.
+        var seg = location.pathname.split('/').filter(Boolean);
+        if (seg.length > 0) base = '/' + seg[0] + '/';
+        location.replace(base);
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>

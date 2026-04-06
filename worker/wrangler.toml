@@ -1,0 +1,7 @@
+name = "gorgon-proxy"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+# Workers will be deployed to https://gorgon-proxy.<your-subdomain>.workers.dev
+# Change `name` above if you want a different URL prefix.
+workers_dev = true
