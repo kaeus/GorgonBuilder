@@ -1,7 +1,8 @@
-import type { AttributeMap, EquipmentSlot, ModifierMap } from '../cdn/types';
+import type { AttributeMap, EquipmentSlot, ItemMap, ModifierMap } from '../cdn/types';
 import type { EquipEntry, ModRef } from '../domain/build';
 import { GENERIC_SIDE, resolveSideSkill } from '../domain/build';
 import { ModifierPicker } from './ModifierPicker';
+import { ItemSelect } from './ItemSelect';
 
 interface Props {
   slot: EquipmentSlot;
@@ -11,13 +12,15 @@ interface Props {
   maxSkillLevel: number;
   mods: ModifierMap;
   attrs: AttributeMap;
+  items: ItemMap;
   onModChange: (idx: number, mod: ModRef | null) => void;
   onSideChange: (side: 'primary' | 'auxiliary', skill: string) => void;
+  onItemChange: (internalName: string | null) => void;
 }
 
 export function EquipmentSlotEditor({
-  slot, entry, buildPrimarySkill, buildAuxSkill, maxSkillLevel, mods, attrs,
-  onModChange, onSideChange,
+  slot, entry, buildPrimarySkill, buildAuxSkill, maxSkillLevel, mods, attrs, items,
+  onModChange, onSideChange, onItemChange,
 }: Props) {
   // Set of powerIds currently chosen in this equipment piece — used to exclude duplicates.
   const alreadyChosen = new Set(entry.mods.map((m) => m?.powerId).filter((x): x is string => !!x));
@@ -62,6 +65,16 @@ export function EquipmentSlotEditor({
         <div className="muted" style={{ fontSize: 11, marginLeft: 'auto' }}>
           3 primary · 2 auxiliary · 1 flex
         </div>
+      </div>
+      <div style={{ marginBottom: 8 }}>
+        <div className="muted" style={{ fontSize: 11, marginBottom: 2 }}>Base item</div>
+        <ItemSelect
+          items={items}
+          slot={slot}
+          value={entry.itemInternalName ?? null}
+          attrs={attrs}
+          onChange={onItemChange}
+        />
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {entry.mods.map((m, i) => (

@@ -11,6 +11,7 @@ interface BuildStore {
   setAuxAbility: (i: number, base: string | null) => void;
   setMod: (slot: EquipmentSlot, idx: number, mod: ModRef | null) => void;
   setSlotSide: (slot: EquipmentSlot, side: 'primary' | 'auxiliary', skill: string) => void;
+  setSlotItem: (slot: EquipmentSlot, internalName: string | null) => void;
 }
 
 export const useBuildStore = create<BuildStore>((set) => ({
@@ -50,6 +51,16 @@ export const useBuildStore = create<BuildStore>((set) => ({
         build: {
           ...s.build,
           equipment: { ...s.build.equipment, [slot]: { ...entry, [key]: skill } },
+        },
+      };
+    }),
+  setSlotItem: (slot, internalName) =>
+    set((s) => {
+      const entry = s.build.equipment[slot];
+      return {
+        build: {
+          ...s.build,
+          equipment: { ...s.build.equipment, [slot]: { ...entry, itemInternalName: internalName } },
         },
       };
     }),

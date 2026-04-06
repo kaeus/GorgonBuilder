@@ -1,5 +1,5 @@
 import { get, set, del, keys } from 'idb-keyval';
-import type { AbilityMap, AttributeMap, CdnBundle, ModifierMap, SkillMap } from './types';
+import type { AbilityMap, AttributeMap, CdnBundle, ItemMap, ModifierMap, SkillMap } from './types';
 
 const CDN_BASE = 'https://cdn.projectgorgon.com';
 // Version file lives on client.projectgorgon.com, which does NOT send CORS headers.
@@ -26,14 +26,24 @@ async function fetchJson<T>(url: string): Promise<T> {
 
 async function fetchVersionRaw(): Promise<string> {
   // Allow build-time override (useful if CORS breaks or for pinning).
-  const pinned = (import.meta as unknown as { env: Record<string, string | undefined> }).env
-    .VITE_CDN_VERSION;
+  const env = (import.meta as unknown as { env: Record<string, string | undefined> }).env;
+  const pinned = env.VITE_CDN_VERSION;
   if (pinned) return pinned;
 
-  // Dev: Vite proxy handles CORS.
+  // Preferred: Cloudflare Worker proxy — adds CORS headers and avoids third-party dependencies.
+  const workerBase = env.VITE_GE_PROXY?.replace(/\/+$/, '');
+  if (workerBase) {
+    try {
+      return await fetchText(`${workerBase}/fileversion`);
+    } catch (e) {
+      console.warn('Worker /fileversion failed, trying fallbacks:', e);
+    }
+  }
+
+  // Dev: Vite proxy handles CORS when no worker is configured.
   if (import.meta.env.DEV) return fetchText(VERSION_URL_DEV);
 
-  // Prod: try direct (may work if CORS is ever enabled), fall back to a public CORS proxy.
+  // Prod fallback: try direct, then a public CORS proxy.
   try {
     return await fetchText(VERSION_URL_DIRECT);
   } catch {
@@ -68,13 +78,14 @@ async function pruneOldVersions(currentVersion: string) {
 
 export async function loadCdnBundle(): Promise<CdnBundle> {
   const version = await getCdnVersion();
-  const [abilities, modifiers, attributes, skills] = await Promise.all([
+  const [abilities, modifiers, attributes, skills, items] = await Promise.all([
     loadOrFetch<AbilityMap>(version, 'abilities'),
     loadOrFetch<ModifierMap>(version, 'tsysclientinfo'),
     loadOrFetch<AttributeMap>(version, 'attributes'),
     loadOrFetch<SkillMap>(version, 'skills'),
+    loadOrFetch<ItemMap>(version, 'items'),
   ]);
   // Fire and forget.
   pruneOldVersions(version).catch(() => {});
-  return { version, abilities, modifiers, attributes, skills };
+  return { version, abilities, modifiers, attributes, skills, items };
 }

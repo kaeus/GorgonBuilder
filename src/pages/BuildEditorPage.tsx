@@ -20,7 +20,7 @@ export default function BuildEditorPage() {
   const nav = useNavigate();
   const { user } = useAuth();
   const cdn = useCdnData();
-  const { build, set, setPrimaryAbility, setAuxAbility, setMod, setSlotSide, reset } = useBuildStore();
+  const { build, set, setPrimaryAbility, setAuxAbility, setMod, setSlotSide, setSlotItem, reset } = useBuildStore();
   const qc = useQueryClient();
   const [importInput, setImportInput] = useState('');
   const [importBusy, setImportBusy] = useState(false);
@@ -202,8 +202,10 @@ export default function BuildEditorPage() {
         build={build}
         mods={modifiers}
         attrs={attributes}
+        items={cdn.data.items}
         onModChange={setMod}
         onSideChange={setSlotSide}
+        onItemChange={setSlotItem}
       />
 
       <h3>Notes</h3>

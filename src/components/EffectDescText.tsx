@@ -32,12 +32,25 @@ interface Props {
   descs: string[] | undefined;
   attrs: AttributeMap;
   iconSize?: number;
+  /** When true, render each desc on its own line (no separators, no inline wrapping). */
+  stacked?: boolean;
 }
 
 /** Render a list of EffectDesc strings as JSX, inlining <icon=NNN> tags as <img>. */
-export function EffectDescText({ descs, attrs, iconSize = 64 }: Props) {
+export function EffectDescText({ descs, attrs, iconSize = 64, stacked = false }: Props) {
   const showIcons = iconSize > 0;
   if (!descs || descs.length === 0) return null;
+  if (stacked) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {descs.map((desc, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <EffectDescText descs={[desc]} attrs={attrs} iconSize={iconSize} />
+          </div>
+        ))}
+      </div>
+    );
+  }
   return (
     <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', minWidth: 0 }}>
       {descs.map((desc, i) => {

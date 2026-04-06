@@ -16,6 +16,8 @@ export interface ModRef {
 export interface EquipEntry {
   primarySkill: string;  // "" | "<skill>" | "Generic"
   auxSkill: string;      // "" | "<skill>" | "Generic"
+  /** Base item template InternalName (from items.json), if chosen. */
+  itemInternalName?: string | null;
   // 6 mod slots: indices 0..2 primary side, 3..4 auxiliary side, 5 flex.
   mods: Array<ModRef | null>;
 }
@@ -47,7 +49,7 @@ export interface Build {
 }
 
 export function emptyEquipEntry(): EquipEntry {
-  return { primarySkill: '', auxSkill: '', mods: [null, null, null, null, null, null] };
+  return { primarySkill: '', auxSkill: '', itemInternalName: null, mods: [null, null, null, null, null, null] };
 }
 
 export function newBuild(ownerUid?: string): Build {

@@ -61,6 +61,18 @@ export interface AttributeDef {
   [k: string]: unknown;
 }
 
+export interface Item {
+  InternalName: string;
+  Name: string;
+  Description?: string;
+  IconId?: number;
+  EquipSlot?: string;
+  EffectDescs?: string[];
+  Keywords?: string[];
+  CraftingTargetLevel?: number;
+  [k: string]: unknown;
+}
+
 export interface SkillDef {
   Id?: number;
   Combat?: boolean;
@@ -75,6 +87,7 @@ export type AbilityMap = Record<string, Ability>;
 export type ModifierMap = Record<string, Modifier>;
 export type AttributeMap = Record<string, AttributeDef>;
 export type SkillMap = Record<string, SkillDef>;
+export type ItemMap = Record<string, Item>;
 
 export interface CdnBundle {
   version: string;
@@ -82,6 +95,7 @@ export interface CdnBundle {
   modifiers: ModifierMap;
   attributes: AttributeMap;
   skills: SkillMap;
+  items: ItemMap;
 }
 
 export const EQUIPMENT_SLOTS = [

@@ -1,17 +1,14 @@
-// GorgonBuilder CORS proxy for gorgonexplorer.com/api/build/<id>.
+// GorgonBuilder CORS proxy.
 //
-// Deployed as a Cloudflare Worker. The upstream API does not send CORS headers
-// and 403s requests that lack a Referer/User-Agent, so we proxy through here,
-// spoof a browser visit, and re-emit the response with permissive CORS.
+// Deployed as a Cloudflare Worker. Routes:
+//   GET /?id=<n>      → gorgonexplorer.com/api/build/<n> (build-planner import)
+//   GET /fileversion  → client.projectgorgon.com/fileversion.txt (PG CDN version)
 //
-// Usage from the client:
-//   GET https://<worker>.workers.dev/?id=1234
-// or
-//   GET https://<worker>.workers.dev/1234
+// Both upstreams lack CORS headers (and GE's WAF 403s requests missing a Referer),
+// so we fetch with spoofed browser headers and re-emit with `Access-Control-Allow-Origin: *`.
 
 export default {
   async fetch(req: Request): Promise<Response> {
-    // Preflight.
     if (req.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders() });
     }
@@ -20,6 +17,29 @@ export default {
     }
 
     const url = new URL(req.url);
+
+    // ----- Project Gorgon CDN version file -----------------------------------
+    if (url.pathname === '/fileversion' || url.pathname === '/fileversion.txt') {
+      try {
+        const upstream = 'https://client.projectgorgon.com/fileversion.txt';
+        const r = await fetch(upstream, {
+          headers: { 'User-Agent': 'Mozilla/5.0 GorgonBuilder' },
+        });
+        const body = await r.text();
+        return new Response(body, {
+          status: r.status,
+          headers: {
+            ...corsHeaders(),
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Cache-Control': r.ok ? 'public, max-age=300' : 'no-store',
+          },
+        });
+      } catch (e) {
+        return json({ error: 'Upstream fetch failed', detail: String(e) }, 502);
+      }
+    }
+
+    // ----- GorgonExplorer build fetch ----------------------------------------
     const idFromQuery = url.searchParams.get('id');
     const idFromPath = url.pathname.replace(/^\/+/, '').split('/')[0];
     const id = (idFromQuery ?? idFromPath ?? '').trim();

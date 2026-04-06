@@ -37,7 +37,10 @@ export default function BuildViewPage() {
 
   const b = q.data;
   const mine = user?.uid === b.ownerUid;
-  const { modifiers, attributes } = cdn.data;
+  const { modifiers, attributes, items } = cdn.data;
+  // Lookup by InternalName so we can show the base item in each slot.
+  const itemByName = new Map<string, typeof items[string]>();
+  for (const k in items) itemByName.set(items[k].InternalName, items[k]);
   const primaryChains = chainsBySkill.get(b.primarySkill) ?? [];
   const auxChains = chainsBySkill.get(b.auxSkill) ?? [];
 
@@ -100,6 +103,7 @@ export default function BuildViewPage() {
       <div style={{ display: 'flex', flexWrap: 'wrap', margin: '-12px' }}>
         {EQUIPMENT_SLOTS.map((slot) => {
           const entry = b.equipment[slot];
+          const baseItem = entry.itemInternalName ? itemByName.get(entry.itemInternalName) : undefined;
           return (
             <div
               key={slot}
@@ -107,7 +111,21 @@ export default function BuildViewPage() {
               style={{ flex: '1 1 calc(50% - 24px)', margin: 12, minWidth: 0, boxSizing: 'border-box' }}
             >
               <div style={{ fontWeight: 600, marginBottom: 6 }}>{slot}</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {baseItem && (
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 4 }}>
+                    <Icon id={baseItem.IconId} size={28} />
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>{baseItem.Name}</div>
+                  </div>
+                  {baseItem.EffectDescs && baseItem.EffectDescs.length > 0 && (
+                    <div className="muted" style={{ fontSize: 12 }}>
+                      <EffectDescText descs={baseItem.EffectDescs} attrs={attributes} iconSize={16} stacked />
+                    </div>
+                  )}
+                  <hr style={{ border: 'none', borderTop: '1px solid #2a2f38', margin: '8px 0 0' }} />
+                </div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {entry.mods.map((m, i) => {
                   if (!m) return <div key={i} className="muted" style={{ fontSize: 11 }}>—</div>;
                   const mod = modifiers[m.powerId];
@@ -116,7 +134,11 @@ export default function BuildViewPage() {
                   // Keep inline <icon=N> tags so the effect text renders its own icons (matches editor).
                   const descs = picked?.tier.EffectDescs ?? [];
                   return (
-                    <div key={i} className="muted" style={{ fontSize: 13 }}>
+                    <div
+                      key={i}
+                      className="muted"
+                      style={{ fontSize: 13, display: 'flex', alignItems: 'center', minHeight: 36 }}
+                    >
                       <EffectDescText descs={descs} attrs={attributes} iconSize={32} />
                     </div>
                   );
