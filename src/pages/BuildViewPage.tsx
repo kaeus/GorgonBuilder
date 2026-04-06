@@ -116,7 +116,7 @@ export default function BuildViewPage() {
                   // Keep inline <icon=N> tags so the effect text renders its own icons (matches editor).
                   const descs = picked?.tier.EffectDescs ?? [];
                   return (
-                    <div key={i} className="muted" style={{ fontSize: 11 }}>
+                    <div key={i} className="muted" style={{ fontSize: 13 }}>
                       <EffectDescText descs={descs} attrs={attributes} iconSize={32} />
                     </div>
                   );

@@ -1,6 +1,7 @@
 import type { Ability, AttributeMap, ModifierMap } from '../cdn/types';
 import { getRelevantMods, getSkillWideMods } from '../domain/abilityModIndex';
 import { pickModifierTier } from '../domain/tierResolver';
+import { damageColor } from '../domain/damageColors';
 import { Icon } from './Icon';
 import { EffectDescText } from './EffectDescText';
 import { stripInlineTags } from '../domain/effectDesc';
@@ -32,15 +33,38 @@ export function AbilityTooltip({ ability, mods, attrs, abilityModIndex, maxSkill
         <Icon id={ability.IconID} size={64} />
         <span>{ability.Name} <span className="muted">· L{ability.Level}</span></span>
       </div>
-      <div className="muted" style={{ marginBottom: 4 }}>{ability.Skill} · {ability.DamageType ?? ''}</div>
+      <div className="muted" style={{ marginBottom: 4 }}>
+        {ability.Skill}
+        {ability.DamageType && (
+          <> · <span style={{ color: damageColor(ability.DamageType) ?? 'inherit', fontWeight: 600 }}>{ability.DamageType}</span></>
+        )}
+      </div>
       {ability.Description && <div style={{ marginBottom: 4 }}>{ability.Description}</div>}
       {ability.PvE && (
         <div className="muted" style={{ marginBottom: 4 }}>
-          {ability.PvE.Damage !== undefined && <>Dmg {ability.PvE.Damage} · </>}
-          {ability.PvE.PowerCost !== undefined && <>Pow {ability.PvE.PowerCost} · </>}
+          {ability.PvE.Damage !== undefined && (
+            <>Damag <span style={{ color: damageColor(ability.DamageType) ?? 'inherit', fontWeight: 600 }}>{ability.PvE.Damage}</span> · </>
+          )}
+          {ability.PvE.PowerCost !== undefined && <>Power {ability.PvE.PowerCost} · </>}
           {ability.PvE.RageCost !== undefined && <>Rage {ability.PvE.RageCost} · </>}
-          {ability.PvE.Range !== undefined && <>Rng {ability.PvE.Range}</>}
+          {ability.PvE.Range !== undefined && <>Range {ability.PvE.Range}</>}
         </div>
+      )}
+      {ability.PvE?.SpecialValues && ability.PvE.SpecialValues.length > 0 && (
+        <ul style={{ margin: '0 0 4px 16px', padding: 0, fontSize: 12 }}>
+          {ability.PvE.SpecialValues
+            .filter((sv) => !(sv.SkipIfZero && (sv.Value ?? 0) === 0))
+            .map((sv, i) => (
+              <li key={i}>
+                {sv.Label ? `${sv.Label} ` : ''}
+                {sv.Value !== undefined ? <strong>{sv.Value}</strong> : null}
+                {sv.Suffix ? ` ${sv.Suffix}` : ''}
+              </li>
+            ))}
+        </ul>
+      )}
+      {ability.SpecialInfo && (
+        <div className="muted" style={{ marginBottom: 4, fontSize: 12 }}>{ability.SpecialInfo}</div>
       )}
       {(ability.Keywords ?? []).map((k) => <span key={k} className="tag">{k}</span>)}
 

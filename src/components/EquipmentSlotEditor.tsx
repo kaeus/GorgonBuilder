@@ -19,6 +19,8 @@ export function EquipmentSlotEditor({
   slot, entry, buildPrimarySkill, buildAuxSkill, maxSkillLevel, mods, attrs,
   onModChange, onSideChange,
 }: Props) {
+  // Set of powerIds currently chosen in this equipment piece — used to exclude duplicates.
+  const alreadyChosen = new Set(entry.mods.map((m) => m?.powerId).filter((x): x is string => !!x));
   // Per-slot resolved skills — falls back to build-level choice if empty.
   const primary = resolveSideSkill(entry.primarySkill, buildPrimarySkill);
   const aux = resolveSideSkill(entry.auxSkill, buildAuxSkill);
@@ -75,6 +77,7 @@ export function EquipmentSlotEditor({
             maxSkillLevel={maxSkillLevel}
             mods={mods}
             attrs={attrs}
+            excludePowerIds={alreadyChosen}
             onChange={(next) => onModChange(i, next)}
           />
         ))}

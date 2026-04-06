@@ -19,8 +19,16 @@ export interface Ability {
     ResetTime?: number;
     AttributesThatModDeltaDamage?: string[];
     AttributesThatModPowerCost?: string[];
+    SpecialValues?: Array<{
+      Label?: string;
+      Suffix?: string;
+      Value?: number;
+      AttributesThatDelta?: string[];
+      SkipIfZero?: boolean;
+    }>;
     [k: string]: unknown;
   };
+  SpecialInfo?: string;
   [k: string]: unknown;
 }
 

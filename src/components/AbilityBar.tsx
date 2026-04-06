@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import type { AttributeMap, ModifierMap } from '../cdn/types';
 import type { AbilityChain } from '../domain/skills';
 import { pickAbilityTier } from '../domain/tierResolver';
-import { AbilityTooltip } from './AbilityTooltip';
 import { Icon } from './Icon';
+import { AbilitySelect } from './AbilitySelect';
+import { AbilityTooltip } from './AbilityTooltip';
 
 interface Props {
   label: string;
@@ -19,10 +20,11 @@ interface Props {
 }
 
 export function AbilityBar({
-  label, chains, selected, maxLevel, maxSkillLevel, onChange, mods, attrs, abilityModIndex, equippedCounts,
+  label, chains, selected, maxLevel, maxSkillLevel, onChange,
+  mods, attrs, abilityModIndex, equippedCounts,
 }: Props) {
-  const [hover, setHover] = useState<number | null>(null);
   const byBase = useMemo(() => new Map(chains.map((c) => [c.baseInternalName, c])), [chains]);
+  const [hoverIcon, setHoverIcon] = useState<number | null>(null);
 
   return (
     <div className="card">
@@ -32,33 +34,34 @@ export function AbilityBar({
           const chain = base ? byBase.get(base) : undefined;
           const resolved = chain ? pickAbilityTier(chain, maxLevel) : undefined;
           return (
-            <div key={i} style={{ position: 'relative' }} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}>
-              <select
-                value={base ?? ''}
-                onChange={(e) => onChange(i, e.target.value || null)}
-                style={{ width: '100%' }}
-              >
-                <option value="">— empty —</option>
-                {chains.map((c) => (
-                  <option key={c.baseInternalName} value={c.baseInternalName}>{c.name}</option>
-                ))}
-              </select>
+            <div key={i} style={{ position: 'relative' }}>
+              <AbilitySelect
+                chains={chains}
+                value={base}
+                maxLevel={maxLevel}
+                onChange={(b) => onChange(i, b)}
+              />
               {resolved && (
-                <div className="muted" style={{ fontSize: 11, marginTop: 2, display: 'flex', gap: 4, alignItems: 'center' }}>
+                <div
+                  className="muted"
+                  style={{ fontSize: 13, marginTop: 2, display: 'flex', gap: 6, alignItems: 'center', position: 'relative' }}
+                  onMouseEnter={() => setHoverIcon(i)}
+                  onMouseLeave={() => setHoverIcon(null)}
+                >
                   <Icon id={resolved.IconID} size={64} title={resolved.Name} />
                   <span>{resolved.Name} (L{resolved.Level ?? 0})</span>
-                </div>
-              )}
-              {hover === i && resolved && (
-                <div style={{ position: 'absolute', top: '100%', left: 0 }}>
-                  <AbilityTooltip
-                    ability={resolved}
-                    mods={mods}
-                    attrs={attrs}
-                    abilityModIndex={abilityModIndex}
-                    maxSkillLevel={maxSkillLevel}
-                    equippedCounts={equippedCounts}
-                  />
+                  {hoverIcon === i && (
+                    <div style={{ position: 'absolute', top: '100%', left: 0 }}>
+                      <AbilityTooltip
+                        ability={resolved}
+                        mods={mods}
+                        attrs={attrs}
+                        abilityModIndex={abilityModIndex}
+                        maxSkillLevel={maxSkillLevel}
+                        equippedCounts={equippedCounts}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>

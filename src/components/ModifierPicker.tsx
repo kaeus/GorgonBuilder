@@ -2,9 +2,9 @@ import { useMemo, useState } from 'react';
 import type { AttributeMap, EquipmentSlot, ModifierMap } from '../cdn/types';
 import { allowedPoolForModIndex, filterModifiers, PoolKind } from '../domain/modifierPools';
 import { pickModifierTier } from '../domain/tierResolver';
-import { renderTier } from '../domain/effectDesc';
 import type { ModRef } from '../domain/build';
 import { TierDesc } from './EffectDescText';
+import { ModifierSelect, toModOptions } from './ModifierSelect';
 
 interface Props {
   slot: EquipmentSlot;
@@ -19,12 +19,14 @@ interface Props {
   maxSkillLevel: number;
   mods: ModifierMap;
   attrs: AttributeMap;
+  /** PowerIds already chosen in sibling slots of the same equipment piece — excluded from the dropdown. */
+  excludePowerIds?: Set<string>;
   onChange: (mod: ModRef | null) => void;
 }
 
 export function ModifierPicker({
   slot, index, value, primarySkill, auxSkill, buildPrimarySkill, buildAuxSkill,
-  maxSkillLevel, mods, attrs, onChange,
+  maxSkillLevel, mods, attrs, excludePowerIds, onChange,
 }: Props) {
   // Flex slot (index 5) mirrors the two build-level skill choices, not the per-slot overrides.
   const effectivePrimary = index >= 5 ? buildPrimarySkill : primarySkill;
@@ -43,15 +45,10 @@ export function ModifierPicker({
       primarySkill: effectivePrimary,
       auxSkill: effectiveAux,
     });
-    // Label each option by its highest-allowed tier's EffectDescs (cleaned).
-    return list.map(({ id, mod }) => {
-      const picked = pickModifierTier(mod, maxSkillLevel);
-      const label = picked
-        ? renderTier(picked.tier, attrs).filter(Boolean).join(' · ')
-        : mod.InternalName;
-      return { id, mod, label: label || mod.InternalName };
-    });
-  }, [mods, slot, activePool, effectivePrimary, effectiveAux, attrs, maxSkillLevel]);
+    const currentId = value?.powerId;
+    const filtered = list.filter(({ id }) => !excludePowerIds?.has(id) || id === currentId);
+    return toModOptions(filtered, attrs, maxSkillLevel);
+  }, [mods, slot, activePool, effectivePrimary, effectiveAux, attrs, maxSkillLevel, excludePowerIds, value?.powerId]);
 
   const current = value ? mods[value.powerId] : undefined;
   const resolved = current ? pickModifierTier(current, maxSkillLevel) : undefined;
@@ -75,24 +72,22 @@ export function ModifierPicker({
               })}
             </select>
           )}
-          <select
-            value={value?.powerId ?? ''}
-            onChange={(e) => {
-              onChange(e.target.value ? { powerId: e.target.value, pool: activePool } : null);
-              if (e.target.value) setEditing(false);
-            }}
-            style={{ flex: 1 }}
-          >
-            <option value="">— empty ({
+          <ModifierSelect
+            options={options}
+            value={value?.powerId ?? null}
+            attrs={attrs}
+            maxSkillLevel={maxSkillLevel}
+            placeholder={`— empty (${
               activePool === 'primary'   ? (effectivePrimary || 'primary') :
               activePool === 'auxiliary' ? (effectiveAux || 'auxiliary') :
               activePool === 'generic'   ? 'Generic' :
               'Shamanic'
-            }) —</option>
-            {options.map(({ id, label }) => (
-              <option key={id} value={id}>{label}</option>
-            ))}
-          </select>
+            }) —`}
+            onChange={(pid) => {
+              onChange(pid ? { powerId: pid, pool: activePool } : null);
+              if (pid) setEditing(false);
+            }}
+          />
           {isSelected && editing && (
             <button onClick={() => setEditing(false)}>Done</button>
           )}
@@ -100,7 +95,7 @@ export function ModifierPicker({
       )}
       {resolved && !showPicker && (
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <div className="muted" style={{ fontSize: 11, flex: 1 }}>
+          <div className="muted" style={{ fontSize: 13, flex: 1 }}>
             <TierDesc tier={resolved.tier} attrs={attrs} iconSize={32} />
           </div>
           <button onClick={() => setEditing(true)}>Edit</button>
