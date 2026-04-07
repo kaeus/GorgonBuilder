@@ -40,14 +40,16 @@ export default {
     }
 
     // ----- GorgonExplorer build fetch ----------------------------------------
+    // Accepts /?id=<id> or /<id>. Build ids are now short alphanumeric strings
+    // (e.g. "x6XWmlmdRigrjNX32XhEX"); legacy numeric ids still match.
     const idFromQuery = url.searchParams.get('id');
     const idFromPath = url.pathname.replace(/^\/+/, '').split('/')[0];
     const id = (idFromQuery ?? idFromPath ?? '').trim();
-    if (!/^\d+$/.test(id)) {
+    if (!/^[A-Za-z0-9_-]+$/.test(id)) {
       return json({ error: 'Missing or invalid build id' }, 400);
     }
 
-    const upstream = `https://gorgonexplorer.com/api/build/${id}`;
+    const upstream = `https://api.gorgonexplorer.com/api/builds/${id}`;
     let upstreamResp: Response;
     try {
       upstreamResp = await fetch(upstream, {
@@ -60,6 +62,7 @@ export default {
           'Accept-Encoding': 'gzip, deflate, br',
           'Referer': `https://gorgonexplorer.com/build-planner/${id}`,
           'Origin': 'https://gorgonexplorer.com',
+          // Cross-origin XHR from gorgonexplorer.com → api.gorgonexplorer.com — preserve that signal.
           'Sec-Fetch-Dest': 'empty',
           'Sec-Fetch-Mode': 'cors',
           'Sec-Fetch-Site': 'same-origin',

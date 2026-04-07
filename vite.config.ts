@@ -15,7 +15,7 @@ export default defineConfig({
         rewrite: () => '/fileversion.txt',
       },
       '/ge-api': {
-        target: 'https://gorgonexplorer.com',
+        target: 'https://api.gorgonexplorer.com',
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/ge-api/, '/api'),
         headers: {

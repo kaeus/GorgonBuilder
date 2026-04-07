@@ -14,16 +14,6 @@ import { newBuild, type Build, type ModRef } from '../domain/build';
 // ---------------------------------------------------------------------------
 // Remote envelope shape
 // ---------------------------------------------------------------------------
-interface GEEnvelope {
-  buildId: number;
-  name?: string;
-  createdBy?: string;
-  description?: string;
-  firstSkill?: string;
-  secondSkill?: string;
-  json: string; // stringified GEBuildJson
-}
-
 interface GESlotMods { [slot: string]: string[] }
 interface GEPoolMods { header?: string; mods: GESlotMods }
 interface GEBuildJson {
@@ -40,24 +30,44 @@ interface GEBuildJson {
   };
 }
 
+// Current API shape: buildContent is a parsed object (was a stringified `json` field).
+// `legacyBuildId` is present for builds migrated from the old numeric scheme.
+interface GEEnvelope {
+  buildId: string;
+  legacyBuildId?: number;
+  name?: string;
+  username?: string;
+  /** Legacy field — older payloads used `createdBy` instead of `username`. */
+  createdBy?: string;
+  description?: string;
+  firstSkill?: string;
+  secondSkill?: string;
+  buildContent?: GEBuildJson;
+  /** Legacy field — older API returned a stringified blob here. */
+  json?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Fetching
 // ---------------------------------------------------------------------------
 // allorigins.win wraps the response in { contents: "<body>" } — we unwrap below.
 const ALLORIGINS = 'https://api.allorigins.win/get?url=';
 
-export function extractBuildId(input: string): number | null {
+export function extractBuildId(input: string): string | null {
   const trimmed = input.trim();
-  if (/^\d+$/.test(trimmed)) return Number(trimmed);
-  const m = trimmed.match(/\/build(?:-planner)?\/(\d+)/) || trimmed.match(/\/api\/build\/(\d+)/);
-  return m ? Number(m[1]) : null;
+  // Bare id (legacy numeric or new short id like "x6XWmlmdRigrjNX32XhEX").
+  if (/^[A-Za-z0-9_-]+$/.test(trimmed)) return trimmed;
+  const m =
+    trimmed.match(/\/build(?:-planner)?\/([A-Za-z0-9_-]+)/) ||
+    trimmed.match(/\/api\/builds?\/([A-Za-z0-9_-]+)/);
+  return m ? m[1] : null;
 }
 
-export async function fetchGorgonExplorerBuild(idOrUrl: string | number): Promise<GEEnvelope> {
-  const id = typeof idOrUrl === 'number' ? idOrUrl : extractBuildId(idOrUrl);
-  if (id == null) throw new Error('Could not find a build ID in the input.');
-  const devUrl = `/ge-api/build/${id}`;
-  const directUrl = `https://gorgonexplorer.com/api/build/${id}`;
+export async function fetchGorgonExplorerBuild(idOrUrl: string): Promise<GEEnvelope> {
+  const id = extractBuildId(idOrUrl);
+  if (!id) throw new Error('Could not find a build ID in the input.');
+  const devUrl = `/ge-api/builds/${id}`;
+  const directUrl = `https://api.gorgonexplorer.com/api/builds/${id}`;
 
   const tryDirect = async (url: string) => {
     const r = await fetch(url, {
@@ -239,13 +249,20 @@ export interface ImportResult {
  */
 export function convertGEBuild(env: GEEnvelope, cdn: CdnBundle, ownerUid?: string): ImportResult {
   const warnings: string[] = [];
-  const data: GEBuildJson = JSON.parse(env.json);
+  // Current API embeds the build as a parsed object; older API stringified it.
+  const data: GEBuildJson = env.buildContent
+    ?? (env.json ? (JSON.parse(env.json) as GEBuildJson) : (() => {
+      throw new Error('Build payload is missing both buildContent and json fields.');
+    })());
 
   const build = newBuild(ownerUid);
   build.name = env.name?.trim() || 'Imported build';
+  const author = env.username ?? env.createdBy;
   build.notes = [
     env.description?.trim(),
-    env.createdBy ? `Imported from gorgonexplorer.com/build-planner/${env.buildId} (by ${env.createdBy})` : `Imported from gorgonexplorer.com/build-planner/${env.buildId}`,
+    author
+      ? `Imported from gorgonexplorer.com/build-planner/${env.buildId} (by ${author})`
+      : `Imported from gorgonexplorer.com/build-planner/${env.buildId}`,
   ].filter(Boolean).join('\n\n');
   build.primarySkill = resolveSkillName(env.firstSkill, cdn.abilities);
   build.auxSkill = resolveSkillName(env.secondSkill, cdn.abilities);
