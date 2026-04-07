@@ -31,6 +31,9 @@ export function buildSkillIndex(abilities: AbilityMap, combatOnly?: Set<string>)
     const a = abilities[id];
     if (!a.Skill || a.Skill === 'Unknown') continue;
     if (combatOnly && !combatOnly.has(a.Skill)) continue;
+    // Internal/hidden abilities that exist only to drive triggered effects — not slottable.
+    if (a.Keywords?.includes('Lint_NotLearnable')) continue;
+    if (a.Name && /internal/i.test(a.Name)) continue;
     (bySkill.get(a.Skill) ?? bySkill.set(a.Skill, []).get(a.Skill)!).push(a);
   }
 

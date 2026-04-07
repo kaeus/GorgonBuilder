@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AttributeMap, EquipmentSlot, Item, ItemMap } from '../cdn/types';
+import { isHiddenItem } from '../domain/itemFilters';
 import { Icon } from './Icon';
 import { EffectDescText } from './EffectDescText';
 
@@ -27,6 +28,7 @@ export function ItemSelect({ items, slot, value, attrs, onChange }: Props) {
     for (const id in items) {
       const it = items[id];
       if (!it.EquipSlot) continue;
+      if (isHiddenItem(it)) continue;
       if (it.EquipSlot === slot) out.push(it);
       else if (slot === 'OffHand' && it.EquipSlot === 'OffHandShield') out.push(it);
     }

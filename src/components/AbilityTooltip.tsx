@@ -43,7 +43,7 @@ export function AbilityTooltip({ ability, mods, attrs, abilityModIndex, maxSkill
       {ability.PvE && (
         <div className="muted" style={{ marginBottom: 4 }}>
           {ability.PvE.Damage !== undefined && (
-            <>Damag <span style={{ color: damageColor(ability.DamageType) ?? 'inherit', fontWeight: 600 }}>{ability.PvE.Damage}</span> · </>
+            <>Damage <span style={{ color: damageColor(ability.DamageType) ?? 'inherit', fontWeight: 600 }}>{ability.PvE.Damage}</span> · </>
           )}
           {ability.PvE.PowerCost !== undefined && <>Power {ability.PvE.PowerCost} · </>}
           {ability.PvE.RageCost !== undefined && <>Rage {ability.PvE.RageCost} · </>}
@@ -70,13 +70,13 @@ export function AbilityTooltip({ ability, mods, attrs, abilityModIndex, maxSkill
 
       {direct.length > 0 && (
         <>
-          <div style={{ marginTop: 6, fontWeight: 600 }}>Equipped direct modifiers</div>
+          <div style={{ marginTop: 6, fontWeight: 700, color: '#f5f7fa' }}>Equipped direct modifiers</div>
           <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
             {direct.map(({ id, mod }, i) => {
               const picked = pickModifierTier(mod, maxSkillLevel);
               const descs = (picked?.tier.EffectDescs ?? []).map(stripInlineTags);
               return (
-                <li key={`${id}-${i}`} className="muted" style={{ fontSize: 11 }}>
+                <li key={`${id}-${i}`} style={{ fontSize: 12, color: '#e6eaf0' }}>
                   <EffectDescText descs={descs} attrs={attrs} iconSize={0} />
                 </li>
               );
@@ -87,13 +87,13 @@ export function AbilityTooltip({ ability, mods, attrs, abilityModIndex, maxSkill
 
       {skillWide.length > 0 && (
         <>
-          <div style={{ marginTop: 6, fontWeight: 600 }}>Equipped skill-wide modifiers</div>
+          <div style={{ marginTop: 6, fontWeight: 700, color: '#f5f7fa' }}>Equipped skill-wide modifiers</div>
           <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
             {skillWide.map(({ id, mod }, i) => {
               const picked = pickModifierTier(mod, maxSkillLevel);
               const descs = (picked?.tier.EffectDescs ?? []).map(stripInlineTags);
               return (
-                <li key={`${id}-${i}`} className="muted" style={{ fontSize: 11 }}>
+                <li key={`${id}-${i}`} style={{ fontSize: 12, color: '#e6eaf0' }}>
                   <EffectDescText descs={descs} attrs={attrs} iconSize={0} />
                 </li>
               );
