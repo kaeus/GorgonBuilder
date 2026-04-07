@@ -67,7 +67,8 @@ export function ModifierPicker({
                   p === 'primary'   ? (effectivePrimary || 'primary') :
                   p === 'auxiliary' ? (effectiveAux || 'auxiliary') :
                   p === 'generic'   ? 'Generic' :
-                  /* shamanic */     'Shamanic';
+                  p === 'shamanic'  ? 'Shamanic' :
+                  /* endurance */    'Endurance';
                 return <option key={p} value={p}>{label}</option>;
               })}
             </select>
@@ -81,7 +82,8 @@ export function ModifierPicker({
               activePool === 'primary'   ? (effectivePrimary || 'primary') :
               activePool === 'auxiliary' ? (effectiveAux || 'auxiliary') :
               activePool === 'generic'   ? 'Generic' :
-              'Shamanic'
+              activePool === 'shamanic'  ? 'Shamanic' :
+              'Endurance'
             }) —`}
             onChange={(pid) => {
               onChange(pid ? { powerId: pid, pool: activePool } : null);

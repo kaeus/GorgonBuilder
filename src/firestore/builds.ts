@@ -1,5 +1,6 @@
 import {
   addDoc, collection, deleteDoc, doc, getDoc, getDocs, query, updateDoc, where, limit,
+  orderBy, startAfter, type QueryDocumentSnapshot, type DocumentData,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import type { Build } from '../domain/build';
@@ -54,22 +55,67 @@ export async function fetchBuild(id: string): Promise<Build | null> {
   return { id: snap.id, ...(snap.data() as Build) };
 }
 
-// We intentionally avoid Firestore orderBy on these multi-where queries so no
-// composite index is required. Sorting is done client-side on `updatedAt`.
 const byUpdatedDesc = (a: Build, b: Build) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0);
 
-/** Search public builds by one or two skills. */
-export async function searchBuilds(skills: string[]): Promise<Build[]> {
+export const PAGE_SIZE = 20;
+
+export interface BuildPage {
+  builds: Build[];
+  /** Cursor for the next page; pass to `searchBuilds({ after })`. Null when there's no next page. */
+  nextCursor: QueryDocumentSnapshot<DocumentData> | null;
+}
+
+interface SearchOptions {
+  skills?: string[];
+  pageSize?: number;
+  after?: QueryDocumentSnapshot<DocumentData> | null;
+}
+
+/**
+ * Paginated public-build search, ordered by `updatedAt` desc.
+ *
+ * Firestore composite indexes you'll need to create on first run (Firebase will surface
+ * a "missing index" error with a one-click create URL):
+ *   - builds: isPublic ASC + updatedAt DESC
+ *   - builds: isPublic ASC + searchSkills ARRAY + updatedAt DESC
+ *
+ * When two skills are provided, Firestore can only filter on the first one (it allows a
+ * single array-contains per query); the second is applied client-side after the page is
+ * fetched. That can cause some pages to come back smaller than `pageSize`. Acceptable for
+ * now; if it ever matters we can swap to two separate queries and merge.
+ */
+export async function searchBuilds(opts: SearchOptions = {}): Promise<BuildPage> {
+  const skills = opts.skills ?? [];
+  const pageSize = opts.pageSize ?? PAGE_SIZE;
+
   const filters = [where('isPublic', '==', true)];
   if (skills.length >= 1) filters.push(where('searchSkills', 'array-contains', skills[0]));
-  const q = query(collection(db, COL), ...filters, limit(100));
+
+  const constraints = [
+    ...filters,
+    orderBy('updatedAt', 'desc'),
+    ...(opts.after ? [startAfter(opts.after)] : []),
+    // Fetch one extra so we can detect "is there a next page".
+    limit(pageSize + 1),
+  ];
+  const q = query(collection(db, COL), ...constraints);
   const snap = await getDocs(q);
-  let results: Build[] = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Build) }));
-  // Second-skill filter must be client-side (Firestore only allows one array-contains).
+
+  // Map docs and remember the last QueryDocumentSnapshot for cursor pagination.
+  let docs = snap.docs;
+  const hasNext = docs.length > pageSize;
+  if (hasNext) docs = docs.slice(0, pageSize);
+
+  let builds: Build[] = docs.map((d) => ({ id: d.id, ...(d.data() as Build) }));
   if (skills.length >= 2) {
-    results = results.filter((b) => (b.searchSkills ?? []).includes(skills[1]));
+    // Second-skill filter is client-side (Firestore only allows one array-contains).
+    builds = builds.filter((b) => (b.searchSkills ?? []).includes(skills[1]));
   }
-  return results.sort(byUpdatedDesc);
+
+  return {
+    builds,
+    nextCursor: hasNext ? docs[docs.length - 1] : null,
+  };
 }
 
 /** List the signed-in user's own builds. */

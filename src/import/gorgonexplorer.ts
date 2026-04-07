@@ -290,9 +290,6 @@ export function convertGEBuild(env: GEEnvelope, cdn: CdnBundle, ownerUid?: strin
   const resolveMod = (text: string): string | null => modLookup.get(normalizeText(text)) ?? null;
 
   const sel = data.selectedMods ?? ({} as GEBuildJson['selectedMods']);
-  if (sel.enduranceMods && Object.values(sel.enduranceMods.mods ?? {}).some((arr) => arr?.length)) {
-    warnings.push('Endurance mods are not supported and were skipped.');
-  }
 
   // Collect each slot's resolved mods, bucketed by which GE pool they came from.
   // We then decide per-slot whether firstSkill or secondSkill gets the "primary side"
@@ -317,6 +314,7 @@ export function convertGEBuild(env: GEEnvelope, cdn: CdnBundle, ownerUid?: strin
     const secondMods = collect(sel.secondSkillMods);
     const generic    = collect(sel.genericMods);
     const shamanic   = collect(sel.shamanicInfusionMods);
+    const endurance  = collect(sel.enduranceMods);
 
     // Decide which side is "primary" for this slot:
     //   - more mods → that side is primary (gets 3 slots).
@@ -347,6 +345,9 @@ export function convertGEBuild(env: GEEnvelope, cdn: CdnBundle, ownerUid?: strin
     } else if (shamanic.length > 0) {
       const m = shamanic.shift()!;
       assigned[5] = { powerId: m.powerId, pool: 'shamanic' };
+    } else if (endurance.length > 0) {
+      const m = endurance.shift()!;
+      assigned[5] = { powerId: m.powerId, pool: 'endurance' };
     } else if (primaryMods.length > 0) {
       const m = primaryMods.shift()!;
       assigned[5] = { powerId: m.powerId, pool: 'primary' };
@@ -361,6 +362,7 @@ export function convertGEBuild(env: GEEnvelope, cdn: CdnBundle, ownerUid?: strin
       ...auxMods.map((m)     => ({ m, pool: 'auxiliary' as const })),
       ...generic.map((m)     => ({ m, pool: 'generic' as const })),
       ...shamanic.map((m)    => ({ m, pool: 'shamanic' as const })),
+      ...endurance.map((m)   => ({ m, pool: 'endurance' as const })),
     ];
     for (const { m, pool } of overflow) {
       const empty = assigned.findIndex((x) => x === null);

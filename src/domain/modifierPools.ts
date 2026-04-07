@@ -1,9 +1,10 @@
 import type { Modifier, ModifierMap, EquipmentSlot } from '../cdn/types';
 
-export type PoolKind = 'primary' | 'auxiliary' | 'generic' | 'shamanic';
+export type PoolKind = 'primary' | 'auxiliary' | 'generic' | 'shamanic' | 'endurance';
 
 export const GENERIC_SKILL = 'AnySkill';
 export const SHAMANIC_SKILL = 'ShamanicInfusion';
+export const ENDURANCE_SKILL = 'Endurance';
 
 export interface PoolContext {
   primarySkill: string;
@@ -16,6 +17,7 @@ function skillForPool(pool: PoolKind, ctx: PoolContext): string {
     case 'auxiliary': return ctx.auxSkill;
     case 'generic':   return GENERIC_SKILL;
     case 'shamanic':  return SHAMANIC_SKILL;
+    case 'endurance': return ENDURANCE_SKILL;
   }
 }
 
@@ -44,5 +46,5 @@ export function filterModifiers(
 export function allowedPoolForModIndex(idx: number): PoolKind[] {
   if (idx <= 2) return ['primary'];
   if (idx <= 4) return ['auxiliary'];
-  return ['primary', 'auxiliary', 'generic', 'shamanic'];
+  return ['primary', 'auxiliary', 'generic', 'shamanic', 'endurance'];
 }
