@@ -15,7 +15,16 @@ export function combatSkillNames(skills: SkillMap): Set<string> {
   return out;
 }
 
-/** Group abilities by Skill, then collapse Prerequisite chains into AbilityChain[]. */
+/** Strip trailing tier number from a display name: "Rotskin 6" → "Rotskin". */
+function stripTierSuffix(name: string): string {
+  return name.replace(/\s+\d+$/, '').trim();
+}
+
+/**
+ * Group abilities by Skill, then by their display Name family. Each unique stripped name
+ * becomes one chain — this keeps variants like Rotflesh (which uses Rotskin's prerequisite
+ * tree but is a different ability) in their own picker entry.
+ */
 export function buildSkillIndex(abilities: AbilityMap, combatOnly?: Set<string>) {
   const bySkill = new Map<string, Ability[]>();
   for (const id in abilities) {
@@ -27,43 +36,28 @@ export function buildSkillIndex(abilities: AbilityMap, combatOnly?: Set<string>)
 
   const chainsBySkill = new Map<string, AbilityChain[]>();
   for (const [skill, list] of bySkill) {
-    // Index by InternalName for prerequisite walking.
-    const byName = new Map<string, Ability>();
-    for (const a of list) byName.set(a.InternalName, a);
-
-    // A base ability has no prerequisite inside the same skill.
-    const chains: AbilityChain[] = [];
-    const consumed = new Set<string>();
-
-    // Walk forward from each base; collect upgrades whose Prerequisite points back.
+    // Group by Name family (stripped of trailing tier number).
+    const byFamily = new Map<string, Ability[]>();
     for (const a of list) {
-      if (a.Prerequisite && byName.has(a.Prerequisite)) continue;
-      if (consumed.has(a.InternalName)) continue;
-      const chain: Ability[] = [a];
-      consumed.add(a.InternalName);
-      // BFS forward: any ability whose Prerequisite chains back to this base.
-      let changed = true;
-      while (changed) {
-        changed = false;
-        for (const b of list) {
-          if (consumed.has(b.InternalName)) continue;
-          if (b.Prerequisite && chain.some((c) => c.InternalName === b.Prerequisite)) {
-            chain.push(b);
-            consumed.add(b.InternalName);
-            changed = true;
-          }
-        }
-      }
-      chain.sort((x, y) => (x.Level ?? 0) - (y.Level ?? 0));
+      const family = stripTierSuffix(a.Name ?? a.InternalName);
+      (byFamily.get(family) ?? byFamily.set(family, []).get(family)!).push(a);
+    }
+
+    const chains: AbilityChain[] = [];
+    for (const [family, members] of byFamily) {
+      // Sort tiers ascending by Level so picker lookups are stable.
+      members.sort((x, y) => (x.Level ?? 0) - (y.Level ?? 0));
+      // Use the lowest-tier ability as the chain identity. This is what build storage keys on,
+      // so changes in higher tiers won't break previously-saved selections.
+      const base = members[0];
       chains.push({
-        baseInternalName: a.InternalName,
-        name: a.Name,
+        baseInternalName: base.InternalName,
+        name: family,
         skill,
-        tiers: chain,
+        tiers: members,
       });
     }
 
-    // Sort chains alphabetically for stable UI.
     chains.sort((x, y) => x.name.localeCompare(y.name));
     chainsBySkill.set(skill, chains);
   }
