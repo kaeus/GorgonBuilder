@@ -50,6 +50,13 @@ export default function BuildEditorPage() {
   );
   const equipped = useMemo(() => equippedPowerIdCounts(build), [build.equipment]);
 
+  // Reflect the build name in the document title; reset on unmount.
+  useEffect(() => {
+    const prev = document.title;
+    document.title = build.name ? `Gorgon Builder: ${build.name}` : 'Gorgon Builder';
+    return () => { document.title = prev; };
+  }, [build.name]);
+
   if (cdn.isLoading) return <div>Loading CDN data…</div>;
   if (cdn.isError || !cdn.data) return <div className="error">Failed to load CDN data.</div>;
 

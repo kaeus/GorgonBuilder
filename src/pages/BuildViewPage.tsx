@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchBuild } from '../firestore/builds';
@@ -31,6 +31,13 @@ export default function BuildViewPage() {
   );
   const equipped = useMemo(() => q.data ? equippedPowerIdCounts(q.data) : new Map<string, number>(), [q.data]);
   const [hoverKey, setHoverKey] = useState<string | null>(null);
+
+  // Reflect the build name in the document title; reset on unmount.
+  useEffect(() => {
+    const prev = document.title;
+    document.title = q.data?.name ? `Gorgon Builder: ${q.data.name}` : 'Gorgon Builder';
+    return () => { document.title = prev; };
+  }, [q.data?.name]);
 
   if (q.isLoading || cdn.isLoading) return <div>Loading…</div>;
   if (!q.data || !cdn.data) return <div>Not found.</div>;
