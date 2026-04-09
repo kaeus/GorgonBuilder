@@ -3,6 +3,7 @@ import type { EquipEntry, ModRef } from '../domain/build';
 import { GENERIC_SIDE, resolveSideSkill } from '../domain/build';
 import { ModifierPicker } from './ModifierPicker';
 import { ItemSelect } from './ItemSelect';
+import { ModSection } from './ModSection';
 
 interface Props {
   slot: EquipmentSlot;
@@ -76,13 +77,14 @@ export function EquipmentSlotEditor({
           onChange={onItemChange}
         />
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {entry.mods.map((m, i) => (
+      {(() => {
+        // Group pickers: 0-2 primary, 3-4 auxiliary, 5 flex.
+        const picker = (i: number) => (
           <ModifierPicker
             key={i}
             slot={slot}
             index={i}
-            value={m}
+            value={entry.mods[i]}
             primarySkill={primary}
             auxSkill={aux}
             buildPrimarySkill={buildPrimarySkill}
@@ -93,8 +95,31 @@ export function EquipmentSlotEditor({
             excludePowerIds={alreadyChosen}
             onChange={(next) => onModChange(i, next)}
           />
-        ))}
-      </div>
+        );
+        // Flex label: show the actual pool picked when one is set; otherwise "Flex".
+        const flex = entry.mods[5];
+        const flexLabel =
+          flex?.pool === 'generic'   ? 'Generic' :
+          flex?.pool === 'shamanic'  ? 'Shamanic Infusion' :
+          flex?.pool === 'endurance' ? 'Endurance' :
+          flex?.pool === 'primary'   ? primary :
+          flex?.pool === 'auxiliary' ? aux :
+          'Flex';
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <ModSection label={primary || 'Primary'}>
+              {picker(0)}{picker(1)}{picker(2)}
+            </ModSection>
+            <ModSection label={aux || 'Auxiliary'}>
+              {picker(3)}{picker(4)}
+            </ModSection>
+            <ModSection label={flexLabel}>
+              {picker(5)}
+            </ModSection>
+          </div>
+        );
+      })()}
     </div>
   );
 }
+

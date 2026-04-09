@@ -12,6 +12,8 @@ import { pickAbilityTier, pickModifierTier } from '../domain/tierResolver';
 import { Icon } from '../components/Icon';
 import { AbilityTooltip } from '../components/AbilityTooltip';
 import { EffectDescText } from '../components/EffectDescText';
+import { RarityBadge } from '../components/RarityBadge';
+import { ModSection } from '../components/ModSection';
 
 export default function BuildViewPage() {
   const { id } = useParams();
@@ -132,25 +134,62 @@ export default function BuildViewPage() {
                   <hr style={{ border: 'none', borderTop: '1px solid #2a2f38', margin: '8px 0 0' }} />
                 </div>
               )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {entry.mods.map((m, i) => {
+              {(() => {
+                const renderRow = (m: typeof entry.mods[number], i: number) => {
                   if (!m) return <div key={i} className="muted" style={{ fontSize: 11 }}>—</div>;
                   const mod = modifiers[m.powerId];
                   if (!mod) return <div key={i} className="muted" style={{ fontSize: 11 }}>[unknown mod]</div>;
                   const picked = pickModifierTier(mod, b.maxLevel);
-                  // Keep inline <icon=N> tags so the effect text renders its own icons (matches editor).
                   const descs = picked?.tier.EffectDescs ?? [];
                   return (
                     <div
                       key={i}
                       className="muted"
-                      style={{ fontSize: 13, display: 'flex', alignItems: 'center', minHeight: 36 }}
+                      style={{ fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, minHeight: 36 }}
                     >
-                      <EffectDescText descs={descs} attrs={attributes} iconSize={32} />
+                      <div style={{ flex: 1 }}>
+                        <EffectDescText descs={descs} attrs={attributes} iconSize={32} />
+                      </div>
+                      <RarityBadge rarity={picked?.tier.MinRarity} />
                     </div>
                   );
-                })}
-              </div>
+                };
+                // Per-slot effective skill names; fall back to build-level.
+                const entryPrimary = entry.primarySkill && entry.primarySkill !== 'Generic'
+                  ? entry.primarySkill
+                  : entry.primarySkill === 'Generic'
+                    ? 'Generic'
+                    : b.primarySkill;
+                const entryAux = entry.auxSkill && entry.auxSkill !== 'Generic'
+                  ? entry.auxSkill
+                  : entry.auxSkill === 'Generic'
+                    ? 'Generic'
+                    : b.auxSkill;
+                const flex = entry.mods[5];
+                const flexLabel =
+                  flex?.pool === 'generic'   ? 'Generic' :
+                  flex?.pool === 'shamanic'  ? 'Shamanic Infusion' :
+                  flex?.pool === 'endurance' ? 'Endurance' :
+                  flex?.pool === 'primary'   ? entryPrimary :
+                  flex?.pool === 'auxiliary' ? entryAux :
+                  'Flex';
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <ModSection label={entryPrimary || 'Primary'}>
+                      {renderRow(entry.mods[0], 0)}
+                      {renderRow(entry.mods[1], 1)}
+                      {renderRow(entry.mods[2], 2)}
+                    </ModSection>
+                    <ModSection label={entryAux || 'Auxiliary'}>
+                      {renderRow(entry.mods[3], 3)}
+                      {renderRow(entry.mods[4], 4)}
+                    </ModSection>
+                    <ModSection label={flexLabel}>
+                      {renderRow(entry.mods[5], 5)}
+                    </ModSection>
+                  </div>
+                );
+              })()}
             </div>
           );
         })}

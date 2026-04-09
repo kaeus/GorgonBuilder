@@ -5,6 +5,7 @@ import { pickModifierTier } from '../domain/tierResolver';
 import type { ModRef } from '../domain/build';
 import { TierDesc } from './EffectDescText';
 import { ModifierSelect, toModOptions } from './ModifierSelect';
+import { RarityBadge } from './RarityBadge';
 
 interface Props {
   slot: EquipmentSlot;
@@ -100,6 +101,7 @@ export function ModifierPicker({
           <div className="muted" style={{ fontSize: 13, flex: 1 }}>
             <TierDesc tier={resolved.tier} attrs={attrs} iconSize={32} />
           </div>
+          <RarityBadge rarity={resolved.tier.MinRarity} />
           <button onClick={() => setEditing(true)}>Edit</button>
           <button onClick={() => onChange(null)}>×</button>
         </div>
