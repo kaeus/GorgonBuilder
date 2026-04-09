@@ -14,6 +14,7 @@ import { AbilityTooltip } from '../components/AbilityTooltip';
 import { EffectDescText } from '../components/EffectDescText';
 import { RarityBadge } from '../components/RarityBadge';
 import { ModSection } from '../components/ModSection';
+import { effectiveModPoolLabel } from '../domain/poolLabels';
 
 export default function BuildViewPage() {
   const { id } = useParams();
@@ -155,24 +156,17 @@ export default function BuildViewPage() {
                   );
                 };
                 // Per-slot effective skill names; fall back to build-level.
-                const entryPrimary = entry.primarySkill && entry.primarySkill !== 'Generic'
-                  ? entry.primarySkill
-                  : entry.primarySkill === 'Generic'
-                    ? 'Generic'
-                    : b.primarySkill;
-                const entryAux = entry.auxSkill && entry.auxSkill !== 'Generic'
-                  ? entry.auxSkill
-                  : entry.auxSkill === 'Generic'
-                    ? 'Generic'
-                    : b.auxSkill;
+                // Stored value may be "Generic" (the GENERIC_SIDE sentinel), a skill name,
+                // or empty (inherit). Never raw "AnySkill" since that's the Modifier.Skill value.
+                const resolveLabel = (stored: string, fallback: string) =>
+                  stored ? stored : fallback;
+                const entryPrimary = resolveLabel(entry.primarySkill, b.primarySkill);
+                const entryAux = resolveLabel(entry.auxSkill, b.auxSkill);
                 const flex = entry.mods[5];
-                const flexLabel =
-                  flex?.pool === 'generic'   ? 'Generic' :
-                  flex?.pool === 'shamanic'  ? 'Shamanic Infusion' :
-                  flex?.pool === 'endurance' ? 'Endurance' :
-                  flex?.pool === 'primary'   ? entryPrimary :
-                  flex?.pool === 'auxiliary' ? entryAux :
-                  'Flex';
+                // Derive the label from the mod's actual Skill field rather than the stored
+                // pool string — hardens against stale/wrong pools from older builds.
+                const flexPoolLabel = effectiveModPoolLabel(flex, modifiers, b.primarySkill, b.auxSkill);
+                const flexLabel = flexPoolLabel ? `Flex · ${flexPoolLabel}` : 'Flex';
                 return (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     <ModSection label={entryPrimary || 'Primary'}>

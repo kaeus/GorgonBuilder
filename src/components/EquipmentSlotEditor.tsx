@@ -4,6 +4,7 @@ import { GENERIC_SIDE, resolveSideSkill } from '../domain/build';
 import { ModifierPicker } from './ModifierPicker';
 import { ItemSelect } from './ItemSelect';
 import { ModSection } from './ModSection';
+import { effectiveModPoolLabel } from '../domain/poolLabels';
 
 interface Props {
   slot: EquipmentSlot;
@@ -28,6 +29,9 @@ export function EquipmentSlotEditor({
   // Per-slot resolved skills — falls back to build-level choice if empty.
   const primary = resolveSideSkill(entry.primarySkill, buildPrimarySkill);
   const aux = resolveSideSkill(entry.auxSkill, buildAuxSkill);
+  // Display label: turn "AnySkill" (the actual Modifier.Skill value for the generic pool)
+  // back into "Generic" for headings.
+  const displaySkill = (s: string) => (s === 'AnySkill' ? 'Generic' : s);
 
   const sideOptions = [
     buildPrimarySkill && { value: buildPrimarySkill, label: buildPrimarySkill },
@@ -96,21 +100,17 @@ export function EquipmentSlotEditor({
             onChange={(next) => onModChange(i, next)}
           />
         );
-        // Flex label: show the actual pool picked when one is set; otherwise "Flex".
+        // Flex label: derived from the mod's actual Skill field (not the stored pool) so
+        // that stale/wrong pool values from older builds display correctly.
         const flex = entry.mods[5];
-        const flexLabel =
-          flex?.pool === 'generic'   ? 'Generic' :
-          flex?.pool === 'shamanic'  ? 'Shamanic Infusion' :
-          flex?.pool === 'endurance' ? 'Endurance' :
-          flex?.pool === 'primary'   ? primary :
-          flex?.pool === 'auxiliary' ? aux :
-          'Flex';
+        const flexPoolLabel = effectiveModPoolLabel(flex, mods, buildPrimarySkill, buildAuxSkill);
+        const flexLabel = flexPoolLabel ? `Flex · ${flexPoolLabel}` : 'Flex';
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <ModSection label={primary || 'Primary'}>
+            <ModSection label={displaySkill(primary) || 'Primary'}>
               {picker(0)}{picker(1)}{picker(2)}
             </ModSection>
-            <ModSection label={aux || 'Auxiliary'}>
+            <ModSection label={displaySkill(aux) || 'Auxiliary'}>
               {picker(3)}{picker(4)}
             </ModSection>
             <ModSection label={flexLabel}>
